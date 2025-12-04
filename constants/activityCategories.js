@@ -1,0 +1,24 @@
+export const ACTIVITY_CATEGORIES = {
+    FOOD: 'Food',
+    RECREATION: 'Recreation & Entertainment',
+    NATURE: 'Nature',
+    ARTS: 'Arts',
+    SOCIAL: 'Social',
+};
+
+export const CATEGORY_ICONS = {
+    [ACTIVITY_CATEGORIES.FOOD]: 'restaurant',
+    [ACTIVITY_CATEGORIES.RECREATION]: 'game-controller',
+    [ACTIVITY_CATEGORIES.NATURE]: 'leaf',
+    [ACTIVITY_CATEGORIES.ARTS]: 'brush',
+    [ACTIVITY_CATEGORIES.SOCIAL]: 'people',
+};
+
+export const CATEGORY_COLORS = {
+    [ACTIVITY_CATEGORIES.FOOD]: '#FF6B6B',
+    [ACTIVITY_CATEGORIES.RECREATION]: '#4ECDC4',
+    [ACTIVITY_CATEGORIES.NATURE]: '#95E1D3',
+    [ACTIVITY_CATEGORIES.ARTS]: '#F38181',
+    [ACTIVITY_CATEGORIES.SOCIAL]: '#AA96DA',
+};
+

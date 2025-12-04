@@ -4,21 +4,52 @@ import { StatusBar } from 'expo-status-bar';
 import { Ionicons } from '@expo/vector-icons';
 import Button from '../components/Button';
 import colors from '../constants/colors';
+import { ACTIVITY_CATEGORIES } from '../constants/activityCategories';
 
-export default function LobbyScreen({ navigation }) {
+export default function LobbyScreen({ route, navigation }) {
+  // Get lobby data from route params (from CreateLobbyScreen or JoinLobbyScreen)
+  const lobbyData = route?.params?.lobbyData;
+  const lobbyCodeFromJoin = route?.params?.lobbyCode;
+  
   // Mock data - in real app, this would come from backend
-  const [lobbyCode] = useState('ABCD');
+  const [lobbyCode] = useState(lobbyCodeFromJoin || 'ABCD');
   const [members] = useState([
-    { id: '1', name: 'You', isReady: true },
+    { id: '1', name: 'You', isReady: true, isOwner: true },
     { id: '2', name: 'Alice', isReady: true },
     { id: '3', name: 'Bob', isReady: true },
     { id: '4', name: 'Charlie', isReady: true },
   ]);
 
-  const allReady = members.every(m => m.isReady);
+  const allReady = members.length > 0 && members.every(m => m && m.isReady);
+  const isOwner = members.length > 0 && members[0]?.isOwner || false;
+  const MAX_MEMBERS = 25;
+  
+  // Validate members array
+  const validMembers = members.filter(m => m && m.id && m.name);
 
   const handleStartGame = () => {
-    navigation.navigate('Swiping');
+    // Pass lobby data to SwipingScreen
+    // If lobbyData is missing (e.g., from join), use defaults but log warning
+    if (!lobbyData) {
+      console.warn('Lobby data missing when starting game. Using defaults.');
+    }
+    
+    if (navigation && navigation.navigate) {
+      navigation.navigate('Swiping', { 
+      lobbyData: lobbyData || {
+        activityCounts: {
+          [ACTIVITY_CATEGORIES.FOOD]: 1,
+          [ACTIVITY_CATEGORIES.RECREATION]: 1,
+        },
+        startHour: 12,
+        endHour: 18,
+        date: new Date().toLocaleDateString('en-US'),
+      },
+        isOwner 
+      });
+    } else {
+      console.error('Navigation not available');
+    }
   };
 
   return (
@@ -35,14 +66,24 @@ export default function LobbyScreen({ navigation }) {
         </View>
 
         <View style={styles.membersContainer}>
-          <Text style={styles.membersTitle}>Members ({members.length})</Text>
-          <ScrollView style={styles.membersList}>
-            {members.map((member) => (
+          <Text style={styles.membersTitle}>
+            Members ({validMembers.length}{lobbyData?.maxMembers ? `/${lobbyData.maxMembers}` : ''})
+          </Text>
+          {validMembers.length >= MAX_MEMBERS && (
+            <Text style={styles.fullLobbyText}>Lobby is full</Text>
+          )}
+          <ScrollView 
+            style={styles.membersList}
+            showsVerticalScrollIndicator={validMembers.length > 5}
+          >
+            {validMembers.map((member) => (
               <View key={member.id} style={styles.memberItem}>
                 <View style={styles.avatarCircle}>
                   <Ionicons name="person" size={24} color={colors.primary} />
                 </View>
-                <Text style={styles.memberName}>{member.name}</Text>
+                <Text style={styles.memberName} numberOfLines={1}>
+                  {member.name || 'Unknown'}
+                </Text>
                 {member.isReady ? (
                   <Ionicons name="checkmark-circle" size={24} color={colors.success} />
                 ) : (
@@ -167,5 +208,12 @@ const styles = StyleSheet.create({
   },
   startButton: {
     backgroundColor: colors.white,
+  },
+  fullLobbyText: {
+    fontSize: 14,
+    color: colors.error,
+    fontWeight: '600',
+    marginBottom: 8,
+    textAlign: 'center',
   },
 });

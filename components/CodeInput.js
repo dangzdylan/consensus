@@ -3,23 +3,39 @@ import { View, TextInput, StyleSheet } from 'react-native';
 import colors from '../constants/colors';
 
 export default function CodeInput({ length = 4, onCodeChange }) {
-    const [code, setCode] = useState(new Array(length).fill(''));
+    // Validate length
+    const validLength = Math.max(4, Math.min(6, parseInt(length, 10) || 4));
+    const [code, setCode] = useState(new Array(validLength).fill(''));
     const inputs = useRef([]);
 
     const handleChange = (text, index) => {
+        // Only allow alphanumeric characters
+        const sanitizedText = text.replace(/[^A-Z0-9]/gi, '').toUpperCase().slice(0, 1);
+        
         const newCode = [...code];
-        newCode[index] = text;
+        newCode[index] = sanitizedText;
         setCode(newCode);
-        onCodeChange(newCode.join(''));
+        
+        const fullCode = newCode.join('');
+        if (onCodeChange) {
+            onCodeChange(fullCode);
+        }
 
-        if (text && index < length - 1) {
-            inputs.current[index + 1].focus();
+        // Auto-advance to next input
+        if (sanitizedText && index < validLength - 1) {
+            const nextInput = inputs.current[index + 1];
+            if (nextInput) {
+                setTimeout(() => nextInput.focus(), 0);
+            }
         }
     };
 
     const handleKeyPress = (e, index) => {
         if (e.nativeEvent.key === 'Backspace' && !code[index] && index > 0) {
-            inputs.current[index - 1].focus();
+            const prevInput = inputs.current[index - 1];
+            if (prevInput) {
+                setTimeout(() => prevInput.focus(), 0);
+            }
         }
     };
 
@@ -27,8 +43,12 @@ export default function CodeInput({ length = 4, onCodeChange }) {
         <View style={styles.container}>
             {code.map((digit, index) => (
                 <TextInput
-                    key={index}
-                    ref={(ref) => inputs.current[index] = ref}
+                    key={`code-input-${index}`}
+                    ref={(ref) => {
+                        if (ref) {
+                            inputs.current[index] = ref;
+                        }
+                    }}
                     style={styles.input}
                     value={digit}
                     onChangeText={(text) => handleChange(text, index)}
@@ -37,6 +57,8 @@ export default function CodeInput({ length = 4, onCodeChange }) {
                     autoCapitalize="characters"
                     maxLength={1}
                     selectTextOnFocus
+                    autoCorrect={false}
+                    autoComplete="off"
                 />
             ))}
         </View>
