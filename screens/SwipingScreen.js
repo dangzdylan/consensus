@@ -29,7 +29,7 @@ export default function SwipingScreen({ navigation }) {
                 fadeAnim.setValue(1);
             } else {
                 // End of deck, go to Leaderboard (Final Screen)
-                navigation.replace('Leaderboard');
+                navigation.replace('Waiting');
             }
         });
     };

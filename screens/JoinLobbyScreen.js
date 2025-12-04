@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { View, Text, StyleSheet, SafeAreaView } from 'react-native';
+import { View, Text, StyleSheet, SafeAreaView, TouchableOpacity } from 'react-native';
 import { StatusBar } from 'expo-status-bar';
 import Button from '../components/Button';
 import CodeInput from '../components/CodeInput';
@@ -10,7 +10,7 @@ export default function JoinLobbyScreen({ navigation }) {
 
     const handleJoin = () => {
         // TODO: Implement join lobby logic
-        navigation.navigate('Swiping');
+        navigation.navigate('Lobby');
     };
 
     return (
@@ -18,17 +18,19 @@ export default function JoinLobbyScreen({ navigation }) {
             <StatusBar style="light" />
             <View style={styles.content}>
                 <View style={styles.header}>
-                    <Text style={styles.title}>Join a Consensus</Text>
+                    <Text style={styles.title}>Join a</Text>
+                    <Text style={styles.title}>Consensus</Text>
                 </View>
 
                 <Text style={styles.label}>Enter a code</Text>
 
-                <CodeInput length={5} onCodeChange={setCode} />
+                <CodeInput length={4} onCodeChange={setCode} />
 
                 <Button
                     title="Join"
                     onPress={handleJoin}
                     style={styles.joinButton}
+                // variant="secondary" // Using default primary but styled dark
                 />
             </View>
         </SafeAreaView>
@@ -66,4 +68,3 @@ const styles = StyleSheet.create({
         marginBottom: 24,
     },
 });
-

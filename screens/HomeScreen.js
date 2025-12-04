@@ -10,7 +10,8 @@ export default function HomeScreen({ navigation }) {
             <StatusBar style="light" />
             <View style={styles.content}>
                 <View style={styles.header}>
-                    <Text style={styles.title}>Find a Perfect Plan</Text>
+                    <Text style={styles.title}>Find a Perfect</Text>
+                    <Text style={styles.title}>Plan</Text>
                 </View>
 
                 <View style={styles.cardsContainer}>
@@ -44,7 +45,7 @@ export default function HomeScreen({ navigation }) {
 const styles = StyleSheet.create({
     container: {
         flex: 1,
-        backgroundColor: colors.primary, // Orange background from Figma
+        backgroundColor: '#FFCC99', // Light orange/peach background from Figma
     },
     content: {
         flex: 1,
@@ -65,7 +66,7 @@ const styles = StyleSheet.create({
         gap: 24,
     },
     card: {
-        backgroundColor: colors.white, // White cards from Figma
+        backgroundColor: '#FFF5F0', // Very light peach/white
         borderRadius: 30,
         padding: 24,
         height: 160,
@@ -77,8 +78,8 @@ const styles = StyleSheet.create({
         shadowOpacity: 0.1,
         shadowRadius: 4,
         elevation: 3,
-        borderWidth: 2,
-        borderColor: colors.black, // Dark border from Figma
+        borderWidth: 1,
+        borderColor: 'rgba(0,0,0,0.05)',
     },
     cardTitle: {
         fontSize: 18,
@@ -90,9 +91,8 @@ const styles = StyleSheet.create({
         width: 50,
         height: 50,
         borderRadius: 16,
-        backgroundColor: colors.black, // Dark square button from Figma
+        backgroundColor: '#333', // Dark gray/black button
         justifyContent: 'center',
         alignItems: 'center',
     },
 });
-
