@@ -15,10 +15,10 @@ export const CATEGORY_ICONS = {
 };
 
 export const CATEGORY_COLORS = {
-    [ACTIVITY_CATEGORIES.FOOD]: '#FF6B6B',
+    [ACTIVITY_CATEGORIES.FOOD]: '#D32F2F', // Darker red for better contrast on orange
     [ACTIVITY_CATEGORIES.RECREATION]: '#4ECDC4',
     [ACTIVITY_CATEGORIES.NATURE]: '#95E1D3',
-    [ACTIVITY_CATEGORIES.ARTS]: '#F38181',
-    [ACTIVITY_CATEGORIES.SOCIAL]: '#AA96DA',
+    [ACTIVITY_CATEGORIES.ARTS]: '#C2185B', // Darker pink/magenta for better contrast
+    [ACTIVITY_CATEGORIES.SOCIAL]: '#7B1FA2', // Darker purple for better contrast
 };
 

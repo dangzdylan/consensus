@@ -52,6 +52,12 @@ export default function LobbyScreen({ route, navigation }) {
           setIsOwner(currentUserMember.isOwner || false);
           setUserReady(currentUserMember.isReady || false);
         }
+        
+        // For single-user testing: if owner is the only member, allow starting
+        const validMembers = (result.data.members || []).filter(m => m && m.id && m.name);
+        if (validMembers.length === 1 && isOwner && isMountedRef.current) {
+          setAllReady(true); // Allow owner to start with just themselves
+        }
       }
     } catch (error) {
       console.error('Error fetching lobby status:', error);
@@ -232,7 +238,9 @@ export default function LobbyScreen({ route, navigation }) {
         </View>
 
         <View style={styles.statusContainer}>
-          {allReady ? (
+          {validMembers.length === 1 && isOwner ? (
+            <Text style={styles.statusReady}>Ready to start!</Text>
+          ) : allReady ? (
             <Text style={styles.statusReady}>Everyone is ready!</Text>
           ) : (
             <Text style={styles.statusWaiting}>Waiting for others...</Text>
@@ -256,7 +264,7 @@ export default function LobbyScreen({ route, navigation }) {
             <Button 
               title={loading ? "Starting..." : "Start Game"} 
               onPress={handleStartGame}
-              disabled={!allReady || loading}
+              disabled={(!allReady && validMembers.length > 1) || loading}
               style={styles.startButton}
               loading={loading}
             />

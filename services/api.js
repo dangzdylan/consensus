@@ -6,8 +6,8 @@
 // Backend base URL - change this if your backend is on a different host/port
 // For physical device testing, use your computer's IP address instead of localhost
 const BASE_URL = (typeof __DEV__ !== 'undefined' && __DEV__)
-    ? 'http://127.0.0.1:5000'  // Local development
-    : 'http://127.0.0.1:5000'; // Production (update with actual backend URL)
+    ? 'http://127.0.0.1:5001'  // Local development
+    : 'http://127.0.0.1:5001'; // Production (update with actual backend URL)
 
 /**
  * Make an API request
@@ -69,7 +69,24 @@ async function apiRequest(endpoint, options = {}) {
         
         if (!response.ok) {
             // Handle error response
-            const errorMessage = json.error || json.message || `HTTP ${response.status}: ${response.statusText}`;
+            // Backend returns: {"error": "message"} for errors
+            let errorMessage = json.error || json.message;
+            
+            // If json is an array (unexpected format), try to extract error from first element
+            if (Array.isArray(json) && json.length > 0) {
+                const firstItem = json[0];
+                if (firstItem && typeof firstItem === 'object' && firstItem.error) {
+                    errorMessage = firstItem.error;
+                } else {
+                    errorMessage = JSON.stringify(json);
+                }
+            }
+            
+            // Fallback to status text if no error message found
+            if (!errorMessage) {
+                errorMessage = `HTTP ${response.status}: ${response.statusText}`;
+            }
+            
             console.error(`[API Error] ${url}:`, errorMessage);
             return {
                 data: null,

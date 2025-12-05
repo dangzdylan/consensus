@@ -109,12 +109,16 @@ export default function SwipingScreen({ route, navigation }) {
 
         setLoading(true);
         try {
+            console.log(`[SwipingScreen] Fetching options for round ${roundNumber}, lobby ${lobby_id}`);
             const result = await consensusAPI.getRoundOptions(lobby_id, roundNumber);
 
             if (!isMountedRef.current) return;
 
+            console.log(`[SwipingScreen] Round options response:`, result);
+
             if (result.error) {
-                Alert.alert('Error', result.error);
+                console.error(`[SwipingScreen] Error from backend:`, result.error);
+                Alert.alert('Error', result.error || 'Failed to fetch options. Please check backend logs.');
                 setLoading(false);
                 return;
             }
@@ -123,8 +127,17 @@ export default function SwipingScreen({ route, navigation }) {
                 setRoundData(result.data.round);
                 const fetchedOptions = result.data.options || [];
                 
+                console.log(`[SwipingScreen] Fetched ${fetchedOptions.length} options for round ${roundNumber}`);
+                
                 if (fetchedOptions.length === 0) {
-                    Alert.alert('Error', 'No options available for this round. Please try again.');
+                    const errorMsg = result.data.message || 
+                        `No options available for round ${roundNumber}. This might be due to:\n\n` +
+                        `• No activities found in the selected area\n` +
+                        `• All activities filtered out by timeframe\n` +
+                        `• Backend API issue\n\n` +
+                        `Please check the backend logs for more details.`;
+                    console.error(`[SwipingScreen] No options found. Round data:`, result.data);
+                    Alert.alert('No Options Available', errorMsg);
                     setLoading(false);
                     return;
                 }
@@ -142,17 +155,22 @@ export default function SwipingScreen({ route, navigation }) {
                     location: opt.location,
                 }));
 
+                console.log(`[SwipingScreen] Mapped ${mappedOptions.length} options successfully`);
+
                 if (isMountedRef.current) {
                     setOptions(mappedOptions);
                     setCurrentOptionIndex(0);
                     setIsTiebreaker(false);
                     setTiedOptions([]);
                 }
+            } else {
+                console.error(`[SwipingScreen] No data in response:`, result);
+                Alert.alert('Error', 'Invalid response from server. Please try again.');
             }
         } catch (error) {
-            console.error('Error fetching round options:', error);
+            console.error('[SwipingScreen] Error fetching round options:', error);
             if (isMountedRef.current) {
-                Alert.alert('Error', 'Failed to load options. Please try again.');
+                Alert.alert('Error', `Failed to load options: ${error.message || 'Unknown error'}. Please check backend connection.`);
             }
         } finally {
             if (isMountedRef.current) {

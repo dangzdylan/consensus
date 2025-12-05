@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { View, Text, StyleSheet, KeyboardAvoidingView, Platform, SafeAreaView } from 'react-native';
+import { View, Text, StyleSheet, KeyboardAvoidingView, Platform, SafeAreaView, TouchableOpacity } from 'react-native';
 import { StatusBar } from 'expo-status-bar';
 import Button from '../components/Button';
 import Input from '../components/Input';
@@ -31,37 +31,50 @@ export default function LoginScreen({ navigation }) {
       // Call backend API
       const result = await authAPI.login(username.trim());
 
+      // Check for error first (handles 404, 400, 500, etc.)
       if (result.error) {
-        // Handle error
+        // Handle error - backend returns {"error": "message"} for errors
         setError(result.error);
         setLoading(false);
         return;
       }
 
-      if (result.data) {
-        // Validate user data before saving
-        if (!result.data.user_id || !result.data.username) {
-          console.error('Invalid user data from backend:', result.data);
-          setError('Invalid response from server. Please try again.');
-          setLoading(false);
-          return;
-        }
-        
-        // Save user data and navigate
-        try {
-          await login(result.data);
-          
-          if (navigation && navigation.replace) {
-            navigation.replace('Home');
-          } else {
-            console.error('Navigation not available in LoginScreen');
-          }
-        } catch (loginError) {
-          console.error('Error saving user data:', loginError);
-          setError('Failed to save user data. Please try again.');
-        }
-      } else {
+      // Check if result.data exists and is valid
+      if (!result.data) {
         setError('Login failed. Please try again.');
+        setLoading(false);
+        return;
+      }
+
+      // Additional safety check: if data is an array, it's likely an error
+      if (Array.isArray(result.data)) {
+        console.error('Invalid response format from backend:', result.data);
+        setError('Invalid response from server. Please try again.');
+        setLoading(false);
+        return;
+      }
+
+      // Validate user data structure before saving
+      if (typeof result.data !== 'object' || !result.data.user_id || !result.data.username) {
+        console.error('Invalid user data from backend:', result.data);
+        setError('Invalid response from server. Please try again.');
+        setLoading(false);
+        return;
+      }
+      
+      // Save user data and navigate
+      try {
+        await login(result.data);
+        
+        if (navigation && navigation.replace) {
+          navigation.replace('Home');
+        } else {
+          console.error('Navigation not available in LoginScreen');
+        }
+      } catch (loginError) {
+        console.error('Error saving user data:', loginError);
+        setError('Failed to save user data. Please try again.');
+        setLoading(false);
       }
     } catch (error) {
       console.error('Login error:', error);
@@ -111,6 +124,19 @@ export default function LoginScreen({ navigation }) {
               loading={loading}
               disabled={loading || !username.trim()}
             />
+
+            <View style={styles.signupContainer}>
+              <Text style={styles.signupText}>Don't have an account? </Text>
+              <TouchableOpacity 
+                onPress={() => {
+                  if (navigation && navigation.navigate) {
+                    navigation.navigate('Signup');
+                  }
+                }}
+              >
+                <Text style={styles.signupLink}>Sign Up</Text>
+              </TouchableOpacity>
+            </View>
           </View>
         </View>
       </KeyboardAvoidingView>
@@ -169,5 +195,18 @@ const styles = StyleSheet.create({
     marginTop: -8,
     marginBottom: 8,
     textAlign: 'center',
+  },
+  signupContainer: {
+    flexDirection: 'row',
+    justifyContent: 'center',
+    marginTop: 24,
+  },
+  signupText: {
+    color: colors.white,
+  },
+  signupLink: {
+    color: colors.white,
+    fontWeight: 'bold',
+    textDecorationLine: 'underline',
   },
 });

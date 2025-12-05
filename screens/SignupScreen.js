@@ -36,40 +36,54 @@ export default function SignupScreen({ navigation }) {
             // Call backend API
             const result = await authAPI.signup(username.trim());
 
+            // Check for error first (handles 400, 409, 500, etc.)
             if (result.error) {
-                // Handle error
+                // Handle error - backend returns {"error": "message"} for errors
                 setError(result.error);
                 setLoading(false);
                 return;
             }
 
-            if (result.data) {
-                // Validate user data before saving
-                if (!result.data.user_id || !result.data.username) {
-                    console.error('Invalid user data from backend:', result.data);
-                    setError('Invalid response from server. Please try again.');
-                    setLoading(false);
-                    return;
-                }
-                
-                // Save user data and navigate
-                try {
-                    const loginResult = await login(result.data);
-                    if (loginResult.success) {
-                        if (navigation && navigation.replace) {
-                            navigation.replace('Home');
-                        } else {
-                            console.error('Navigation not available in SignupScreen');
-                        }
-                    } else {
-                        setError(loginResult.error || 'Failed to save user data. Please try again.');
-                    }
-                } catch (loginError) {
-                    console.error('Error saving user data:', loginError);
-                    setError('Failed to save user data. Please try again.');
-                }
-            } else {
+            // Check if result.data exists and is valid
+            if (!result.data) {
                 setError('Signup failed. Please try again.');
+                setLoading(false);
+                return;
+            }
+
+            // Additional safety check: if data is an array, it's likely an error
+            if (Array.isArray(result.data)) {
+                console.error('Invalid response format from backend:', result.data);
+                setError('Invalid response from server. Please try again.');
+                setLoading(false);
+                return;
+            }
+
+            // Validate user data structure before saving
+            if (typeof result.data !== 'object' || !result.data.user_id || !result.data.username) {
+                console.error('Invalid user data from backend:', result.data);
+                setError('Invalid response from server. Please try again.');
+                setLoading(false);
+                return;
+            }
+                
+            // Save user data and navigate
+            try {
+                const loginResult = await login(result.data);
+                if (loginResult.success) {
+                    if (navigation && navigation.replace) {
+                        navigation.replace('Home');
+                    } else {
+                        console.error('Navigation not available in SignupScreen');
+                    }
+                } else {
+                    setError(loginResult.error || 'Failed to save user data. Please try again.');
+                    setLoading(false);
+                }
+            } catch (loginError) {
+                console.error('Error saving user data:', loginError);
+                setError('Failed to save user data. Please try again.');
+                setLoading(false);
             }
         } catch (error) {
             console.error('Signup error:', error);
