@@ -21,6 +21,44 @@ const getDayOfWeek = (dateString) => {
     }
 };
 
+// Helper function to convert 24-hour time to 12-hour AM/PM format
+const formatTime12Hour = (hour) => {
+    if (hour === undefined || hour === null || isNaN(hour)) {
+        return '12:00 PM';
+    }
+    const h = Math.floor(hour);
+    const ampm = h >= 12 ? 'PM' : 'AM';
+    const formattedHour = h % 12 === 0 ? 12 : h % 12;
+    return `${formattedHour}:00 ${ampm}`;
+};
+
+// Helper function to convert any time string (military or 12-hour) to 12-hour format
+const convertTimeTo12Hour = (timeString) => {
+    if (!timeString || typeof timeString !== 'string') {
+        return '12:00 PM';
+    }
+    
+    // If already in 12-hour format (contains AM/PM), return as is
+    if (timeString.toUpperCase().includes('AM') || timeString.toUpperCase().includes('PM')) {
+        return timeString;
+    }
+    
+    // Try to parse military time (HH:MM or HH:MM:SS)
+    const militaryMatch = timeString.match(/^(\d{1,2}):(\d{2})(?::\d{2})?$/);
+    if (militaryMatch) {
+        const hour = parseInt(militaryMatch[1], 10);
+        const minute = militaryMatch[2];
+        if (!isNaN(hour) && hour >= 0 && hour <= 23) {
+            const ampm = hour >= 12 ? 'PM' : 'AM';
+            const formattedHour = hour % 12 === 0 ? 12 : hour % 12;
+            return `${formattedHour}:${minute} ${ampm}`;
+        }
+    }
+    
+    // If we can't parse it, return default
+    return '12:00 PM';
+};
+
 // Helper function to check if activity is open during timeframe
 const isOpenDuringTimeframe = (activity, startHour, endHour, dayOfWeek) => {
     // Validate inputs
@@ -103,7 +141,7 @@ export default function ItineraryScreen({ route, navigation }) {
                             id: activity.id || activity.option_id,
                             name: activity.name || activity.title || activity.place_name || 'Unknown Activity',
                             category: activity.category || activity.type || 'Uncategorized',
-                            time: activity.time || '12:00 PM',
+                            time: convertTimeTo12Hour(activity.time) || '12:00 PM', // Convert backend time to 12-hour format
                             duration: activity.duration || 1,
                             hours: activity.hours || activity.opening_hours || activity.business_hours,
                             location: activity.location || (activity.lat && activity.lng ? { latitude: activity.lat, longitude: activity.lng } : (activity.latitude && activity.longitude ? { latitude: activity.latitude, longitude: activity.longitude } : null)),
@@ -153,7 +191,7 @@ export default function ItineraryScreen({ route, navigation }) {
             }
             
             const duration = Math.max(1, Math.min(3, activity.duration || 1)); // Max 3 hours per activity
-            const time = `${currentHour.toString().padStart(2, '0')}:00`;
+            const time = formatTime12Hour(currentHour); // Convert to 12-hour format
             currentHour = Math.min(maxHour, currentHour + duration);
             
             return { ...activity, time, duration };
@@ -208,66 +246,34 @@ export default function ItineraryScreen({ route, navigation }) {
             return;
         }
         
-        // Check if activity is open at the new time
+        // Recalculate times for all activities - allow move even if not ideal
+        const recalculated = calculateTimes(newActivities);
+        
+        // Check if activity is open at the new time (warning only, don't block)
         const dayOfWeek = getDayOfWeek(date);
         const isOpen = isOpenDuringTimeframe(movedActivity, newStartHour, newEndHour, dayOfWeek);
         
         if (!isOpen) {
-            // Activity would be closed at new time - prevent move
-            const timeString = `${newStartHour.toString().padStart(2, '0')}:00`;
+            // Show warning but allow the move
+            const timeString = formatTime12Hour(newStartHour);
             Alert.alert(
-                'Cannot Move Activity',
-                `${movedActivity.name} is not open at ${timeString}. Please choose a different time slot.`,
+                'Warning',
+                `${movedActivity.name} may not be open at ${timeString}. You can still move it if needed.`,
                 [{ text: 'OK' }]
             );
-            return;
         }
         
-        // Check if new time would exceed end hour
+        // Check if new time would exceed end hour (warning only, don't block)
         if (newEndHour > endHour) {
+            const endTimeString = formatTime12Hour(endHour);
             Alert.alert(
-                'Cannot Move Activity',
-                `Moving this activity would exceed the end time (${endHour}:00).`,
+                'Warning',
+                `Moving this activity may exceed the end time (${endTimeString}). You can still move it if needed.`,
                 [{ text: 'OK' }]
             );
-            return;
         }
         
-        // Recalculate times for all activities
-        const recalculated = calculateTimes(newActivities);
-        
-        // Double-check all activities are still valid after recalculation
-        const allValid = recalculated.every((activity, index) => {
-            // Skip validation if time is invalid (overflow case)
-            if (activity.overflow || !activity.time || activity.time === 'N/A') {
-                return true; // Allow overflow activities, they'll be handled separately
-            }
-            
-            // Validate time format before parsing
-            const timeMatch = activity.time.match(/^(\d{1,2}):(\d{2})$/);
-            if (!timeMatch) {
-                console.warn(`Invalid time format: ${activity.time}`);
-                return true; // Allow invalid format to prevent blocking
-            }
-            
-            const activityStartHour = parseInt(timeMatch[1], 10);
-            if (isNaN(activityStartHour) || activityStartHour < 0 || activityStartHour > 23) {
-                return true; // Allow invalid hours to prevent blocking
-            }
-            
-            const activityEndHour = activityStartHour + (activity.duration || 1);
-            return isOpenDuringTimeframe(activity, activityStartHour, activityEndHour, dayOfWeek);
-        });
-        
-        if (!allValid) {
-            Alert.alert(
-                'Cannot Move Activity',
-                'Moving this activity would cause scheduling conflicts with other activities.',
-                [{ text: 'OK' }]
-            );
-            return;
-        }
-        
+        // Allow the move - owner has full control
         setScheduledActivities(recalculated);
     };
 
@@ -319,7 +325,7 @@ export default function ItineraryScreen({ route, navigation }) {
                     <Text style={styles.title}>Your Itinerary</Text>
                     <Text style={styles.dateText}>{date}</Text>
                     <Text style={styles.timeframeText}>
-                        {startHour}:00 - {endHour}:00 ({Math.max(0, endHour - startHour)} hours)
+                        {formatTime12Hour(startHour)} - {formatTime12Hour(endHour)} ({Math.max(0, endHour - startHour)} hours)
                     </Text>
                 </View>
 
